@@ -1,0 +1,85 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: acr-key
+data:
+  .dockerconfigjson: eyJhdXRocyI6eyJodHRwOi8vYWNyYWxmcmVkby5henVyZWNyLmlvIjp7ImF1dGgiOiAiTWpRd01tSmpZV010TkRFME5TMDBNRGMzTFRnMk9Ua3RNV1ZrWmpGa016YzFNR1ExT2xsSFIxSndVVzV3V0dSWGF6RmZaVFJrYjNoU1RsbDJhVzl2ZmxSUmVXZEhaREFLIn19fQ==
+type: kubernetes.io/dockerconfigjson
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: calculator
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: "calculator"
+      tier: "backend"
+      track: "stable"
+      version: "1.0.0"
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: calculator
+        tier: backend
+        track: stable
+        version: "1.0.0"
+    spec:
+      imagePullSecrets: 
+      - name: acr-key
+      containers:
+      - name: calculator
+        image: acralfredo.azurecr.io/calculator:latest
+        ports:
+          - name: http
+            containerPort: 80
+        resources:
+          requests:
+            cpu: 50m
+            memory: 300Mi
+          limits:
+            cpu: 100m
+            memory: 700Mi
+        imagePullPolicy: Always         
+        env:            
+            - name: VERSION
+              value: "1.0.0"   
+      
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: calculator-backend
+spec:
+  selector:
+    app: calculator
+    tier: backend
+  ports:
+  - protocol: TCP
+    port: 9010
+# ---
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: ingress
+#   annotations:
+# spec:
+#   ingressClassName: nginx
+#   rules:
+#   - host: calculator.backend
+#     http:
+#       paths:
+#         - path: /
+#           pathType: Prefix
+#           backend:
+#             service:
+#               name: calculator-backend
+#               port:
+#                 number: 9010
