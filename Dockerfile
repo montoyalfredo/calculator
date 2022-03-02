@@ -5,3 +5,5 @@ COPY ${JAR_FILE} calculatorbasic.jar
 ENTRYPOINT ["java","-jar","calculatorbasic.jar"]
 
 #
+
+#
